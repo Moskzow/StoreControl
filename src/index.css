@@ -1,0 +1,298 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Blue Theme (Default) */
+    --color-primary-50: 238 242 255;
+    --color-primary-100: 224 231 255;
+    --color-primary-200: 199 210 254;
+    --color-primary-300: 165 180 252;
+    --color-primary-400: 129 140 248;
+    --color-primary-500: 99 102 241;
+    --color-primary-600: 79 70 229;
+    --color-primary-700: 67 56 202;
+    --color-primary-800: 55 48 163;
+    --color-primary-900: 49 46 129;
+    --color-primary-950: 30 27 75;
+  }
+
+  .theme-green {
+    --color-primary-50: 236 253 245;
+    --color-primary-100: 209 250 229;
+    --color-primary-200: 167 243 208;
+    --color-primary-300: 110 231 183;
+    --color-primary-400: 52 211 153;
+    --color-primary-500: 16 185 129;
+    --color-primary-600: 5 150 105;
+    --color-primary-700: 4 120 87;
+    --color-primary-800: 6 95 70;
+    --color-primary-900: 6 78 59;
+    --color-primary-950: 2 44 34;
+  }
+
+  .theme-purple {
+    --color-primary-50: 250 245 255;
+    --color-primary-100: 243 232 255;
+    --color-primary-200: 233 213 255;
+    --color-primary-300: 216 180 254;
+    --color-primary-400: 196 181 253;
+    --color-primary-500: 168 85 247;
+    --color-primary-600: 147 51 234;
+    --color-primary-700: 126 34 206;
+    --color-primary-800: 107 33 168;
+    --color-primary-900: 88 28 135;
+    --color-primary-950: 59 7 100;
+  }
+
+  /* Light mode styles */
+  .light {
+    color-scheme: light;
+  }
+
+  /* Dark mode styles */
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Base body styles with proper dark mode support */
+  body {
+    @apply font-sans transition-colors duration-300;
+  }
+
+  /* Light mode body */
+  .light body {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  /* Dark mode body */
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ease-in-out;
+  }
+
+  .btn-primary {
+    @apply text-white shadow-sm focus:ring-offset-2;
+    background-color: rgb(var(--color-primary-600));
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: rgb(var(--color-primary-700));
+  }
+  
+  .btn-primary:focus {
+    --tw-ring-color: rgb(var(--color-primary-500));
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500;
+  }
+
+  .btn-success {
+    @apply bg-success-600 text-white hover:bg-success-700 focus:ring-success-500;
+  }
+
+  .btn-warning {
+    @apply bg-warning-600 text-white hover:bg-warning-700 focus:ring-warning-500;
+  }
+
+  .btn-error {
+    @apply bg-error-600 text-white hover:bg-error-700 focus:ring-error-500;
+  }
+
+  .btn-outline {
+    @apply border text-gray-700 hover:bg-gray-50 focus:ring-offset-2;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+    @apply border-gray-300 dark:border-gray-600;
+    @apply bg-white dark:bg-gray-800;
+  }
+  
+  .btn-outline:focus {
+    --tw-ring-color: rgb(var(--color-primary-500));
+  }
+
+  .card {
+    @apply shadow rounded-lg overflow-hidden transition-colors duration-300;
+    @apply bg-white dark:bg-gray-800;
+  }
+
+  .input {
+    @apply block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-colors duration-300;
+    @apply border-gray-300 dark:border-gray-600;
+    @apply bg-white dark:bg-gray-700;
+    @apply text-gray-900 dark:text-white;
+    @apply placeholder-gray-500 dark:placeholder-gray-400;
+  }
+  
+  .input:focus {
+    --tw-ring-color: rgb(var(--color-primary-500));
+    border-color: rgb(var(--color-primary-500));
+  }
+
+  .select {
+    @apply block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-0 sm:text-sm transition-colors duration-300;
+    @apply border-gray-300 dark:border-gray-600;
+    @apply bg-white dark:bg-gray-700;
+    @apply text-gray-900 dark:text-white;
+  }
+  
+  .select:focus {
+    --tw-ring-color: rgb(var(--color-primary-500));
+    border-color: rgb(var(--color-primary-500));
+  }
+
+  .table-container {
+    @apply overflow-x-auto shadow rounded-lg;
+  }
+
+  .table {
+    @apply min-w-full divide-y transition-colors duration-300;
+    @apply divide-gray-200 dark:divide-gray-700;
+  }
+
+  .table th {
+    @apply px-6 py-3 text-left text-xs font-medium uppercase tracking-wider transition-colors duration-300;
+    @apply bg-gray-50 dark:bg-gray-800;
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  .table td {
+    @apply px-6 py-4 whitespace-nowrap text-sm transition-colors duration-300;
+    @apply text-gray-900 dark:text-gray-300;
+  }
+
+  .table tr {
+    @apply transition-colors duration-300;
+    @apply bg-white dark:bg-gray-900;
+  }
+
+  .table tr:nth-child(even) {
+    @apply bg-gray-50 dark:bg-gray-800;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300;
+  }
+
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800 dark:bg-warning-900 dark:text-warning-300;
+  }
+
+  .badge-error {
+    @apply bg-error-100 text-error-800 dark:bg-error-900 dark:text-error-300;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300;
+  }
+
+  /* Primary color utilities using CSS variables */
+  .bg-primary-50 { background-color: rgb(var(--color-primary-50)); }
+  .bg-primary-100 { background-color: rgb(var(--color-primary-100)); }
+  .bg-primary-200 { background-color: rgb(var(--color-primary-200)); }
+  .bg-primary-300 { background-color: rgb(var(--color-primary-300)); }
+  .bg-primary-400 { background-color: rgb(var(--color-primary-400)); }
+  .bg-primary-500 { background-color: rgb(var(--color-primary-500)); }
+  .bg-primary-600 { background-color: rgb(var(--color-primary-600)); }
+  .bg-primary-700 { background-color: rgb(var(--color-primary-700)); }
+  .bg-primary-800 { background-color: rgb(var(--color-primary-800)); }
+  .bg-primary-900 { background-color: rgb(var(--color-primary-900)); }
+  .bg-primary-950 { background-color: rgb(var(--color-primary-950)); }
+
+  .text-primary-50 { color: rgb(var(--color-primary-50)); }
+  .text-primary-100 { color: rgb(var(--color-primary-100)); }
+  .text-primary-200 { color: rgb(var(--color-primary-200)); }
+  .text-primary-300 { color: rgb(var(--color-primary-300)); }
+  .text-primary-400 { color: rgb(var(--color-primary-400)); }
+  .text-primary-500 { color: rgb(var(--color-primary-500)); }
+  .text-primary-600 { color: rgb(var(--color-primary-600)); }
+  .text-primary-700 { color: rgb(var(--color-primary-700)); }
+  .text-primary-800 { color: rgb(var(--color-primary-800)); }
+  .text-primary-900 { color: rgb(var(--color-primary-900)); }
+  .text-primary-950 { color: rgb(var(--color-primary-950)); }
+
+  .border-primary-50 { border-color: rgb(var(--color-primary-50)); }
+  .border-primary-100 { border-color: rgb(var(--color-primary-100)); }
+  .border-primary-200 { border-color: rgb(var(--color-primary-200)); }
+  .border-primary-300 { border-color: rgb(var(--color-primary-300)); }
+  .border-primary-400 { border-color: rgb(var(--color-primary-400)); }
+  .border-primary-500 { border-color: rgb(var(--color-primary-500)); }
+  .border-primary-600 { border-color: rgb(var(--color-primary-600)); }
+  .border-primary-700 { border-color: rgb(var(--color-primary-700)); }
+  .border-primary-800 { border-color: rgb(var(--color-primary-800)); }
+  .border-primary-900 { border-color: rgb(var(--color-primary-900)); }
+  .border-primary-950 { border-color: rgb(var(--color-primary-950)); }
+
+  /* Header with dynamic primary color */
+  .header-primary {
+    background-color: rgb(var(--color-primary-700));
+    transition: background-color 0.3s ease, padding 0.3s ease-in-out;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+  }
+
+  /* Animation classes */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
