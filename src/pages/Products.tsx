@@ -204,7 +204,7 @@ function Products() {
       {/* Header and actions */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 Productos="text-2xl font-bold text-gray-900 dark:text-white">Gestión de productos</h1>
+          <h1 Productos="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Productos</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Gestiona el inventario de productos con precios diferenciados por tipo de cliente
           </p>
