@@ -177,7 +177,7 @@ function Purchases() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Compras</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Gestiona las compras a proveedores
+            Administra las compras a proveedores
           </p>
         </div>
         
