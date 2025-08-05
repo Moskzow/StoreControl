@@ -19,6 +19,205 @@ export function exportAsJSON(products: Product[], suppliers: Supplier[]): string
   return JSON.stringify(exportData, null, 2);
 }
 
+// Export complete data as JSON (new function for complete backup)
+export function exportCompleteData(data: CompleteExportData, format: 'json' | 'xml'): string {
+  if (format === 'json') {
+    return JSON.stringify(data, null, 2);
+  } else {
+    return exportCompleteDataAsXML(data);
+  }
+}
+
+// Export complete data as XML
+function exportCompleteDataAsXML(data: CompleteExportData): string {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<StoreControlBackup>\n';
+  xml += `  <metadata>\n`;
+  xml += `    <exportDate>${data.exportDate}</exportDate>\n`;
+  xml += `    <version>${data.version}</version>\n`;
+  xml += `  </metadata>\n`;
+  
+  // Company info
+  if (data.companyInfo) {
+    xml += '  <companyInfo>\n';
+    Object.entries(data.companyInfo).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        xml += `    <${key}>${escapeXml(String(value))}</${key}>\n`;
+      }
+    });
+    xml += '  </companyInfo>\n';
+  }
+  
+  // Settings
+  if (data.settings) {
+    xml += '  <settings>\n';
+    Object.entries(data.settings).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        xml += `    <${key}>${escapeXml(String(value))}</${key}>\n`;
+      }
+    });
+    xml += '  </settings>\n';
+  }
+  
+  // Products
+  if (data.products && data.products.length > 0) {
+    xml += '  <products>\n';
+    data.products.forEach(product => {
+      xml += '    <product>\n';
+      xml += `      <id>${escapeXml(product.id)}</id>\n`;
+      xml += `      <code>${escapeXml(product.code)}</code>\n`;
+      xml += `      <name>${escapeXml(product.name)}</name>\n`;
+      xml += `      <description>${escapeXml(product.description)}</description>\n`;
+      xml += `      <purchasePrice>${product.purchasePrice}</purchasePrice>\n`;
+      xml += `      <salePrice>${product.salePrice}</salePrice>\n`;
+      xml += `      <hasDiscount>${product.hasDiscount}</hasDiscount>\n`;
+      xml += `      <discountPrice>${product.discountPrice}</discountPrice>\n`;
+      xml += `      <hasVAT>${product.hasVAT}</hasVAT>\n`;
+      xml += `      <stock>${product.stock}</stock>\n`;
+      xml += `      <supplierId>${escapeXml(product.supplierId)}</supplierId>\n`;
+      xml += `      <category>${escapeXml(product.category)}</category>\n`;
+      xml += `      <createdAt>${product.createdAt}</createdAt>\n`;
+      xml += `      <updatedAt>${product.updatedAt}</updatedAt>\n`;
+      
+      if (product.profitMargins) {
+        xml += '      <profitMargins>\n';
+        Object.entries(product.profitMargins).forEach(([key, value]) => {
+          xml += `        <${key}>${value}</${key}>\n`;
+        });
+        xml += '      </profitMargins>\n';
+      }
+      
+      if (product.lowStockThreshold !== undefined) {
+        xml += `      <lowStockThreshold>${product.lowStockThreshold}</lowStockThreshold>\n`;
+      }
+      
+      xml += '    </product>\n';
+    });
+    xml += '  </products>\n';
+  }
+  
+  // Suppliers
+  if (data.suppliers && data.suppliers.length > 0) {
+    xml += '  <suppliers>\n';
+    data.suppliers.forEach(supplier => {
+      xml += '    <supplier>\n';
+      xml += `      <id>${escapeXml(supplier.id)}</id>\n`;
+      xml += `      <name>${escapeXml(supplier.name)}</name>\n`;
+      xml += `      <contactName>${escapeXml(supplier.contactName)}</contactName>\n`;
+      xml += `      <phone>${escapeXml(supplier.phone)}</phone>\n`;
+      xml += `      <email>${escapeXml(supplier.email)}</email>\n`;
+      xml += `      <address>${escapeXml(supplier.address)}</address>\n`;
+      xml += `      <notes>${escapeXml(supplier.notes)}</notes>\n`;
+      xml += `      <createdAt>${supplier.createdAt}</createdAt>\n`;
+      xml += '    </supplier>\n';
+    });
+    xml += '  </suppliers>\n';
+  }
+  
+  // Customers
+  if (data.customers && data.customers.length > 0) {
+    xml += '  <customers>\n';
+    data.customers.forEach(customer => {
+      xml += '    <customer>\n';
+      Object.entries(customer).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          xml += `      <${key}>${escapeXml(String(value))}</${key}>\n`;
+        }
+      });
+      xml += '    </customer>\n';
+    });
+    xml += '  </customers>\n';
+  }
+  
+  // Customer Types
+  if (data.customerTypes && data.customerTypes.length > 0) {
+    xml += '  <customerTypes>\n';
+    data.customerTypes.forEach(type => {
+      xml += '    <customerType>\n';
+      Object.entries(type).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (Array.isArray(value)) {
+            xml += `      <${key}>\n`;
+            value.forEach(item => {
+              xml += `        <item>${escapeXml(String(item))}</item>\n`;
+            });
+            xml += `      </${key}>\n`;
+          } else {
+            xml += `      <${key}>${escapeXml(String(value))}</${key}>\n`;
+          }
+        }
+      });
+      xml += '    </customerType>\n';
+    });
+    xml += '  </customerTypes>\n';
+  }
+  
+  // Sales
+  if (data.sales && data.sales.length > 0) {
+    xml += '  <sales>\n';
+    data.sales.forEach(sale => {
+      xml += '    <sale>\n';
+      xml += `      <id>${escapeXml(sale.id)}</id>\n`;
+      xml += `      <date>${sale.date}</date>\n`;
+      xml += `      <total>${sale.total}</total>\n`;
+      xml += `      <paymentMethod>${escapeXml(sale.paymentMethod)}</paymentMethod>\n`;
+      xml += `      <cashRegisterId>${escapeXml(sale.cashRegisterId)}</cashRegisterId>\n`;
+      xml += `      <notes>${escapeXml(sale.notes)}</notes>\n`;
+      
+      if (sale.customerId) {
+        xml += `      <customerId>${escapeXml(sale.customerId)}</customerId>\n`;
+      }
+      
+      xml += '      <customerType>\n';
+      Object.entries(sale.customerType).forEach(([key, value]) => {
+        xml += `        <${key}>${escapeXml(String(value))}</${key}>\n`;
+      });
+      xml += '      </customerType>\n';
+      
+      xml += '      <items>\n';
+      sale.items.forEach(item => {
+        xml += '        <item>\n';
+        Object.entries(item).forEach(([key, value]) => {
+          xml += `          <${key}>${escapeXml(String(value))}</${key}>\n`;
+        });
+        xml += '        </item>\n';
+      });
+      xml += '      </items>\n';
+      
+      xml += '    </sale>\n';
+    });
+    xml += '  </sales>\n';
+  }
+  
+  // Purchases
+  if (data.purchases && data.purchases.length > 0) {
+    xml += '  <purchases>\n';
+    data.purchases.forEach(purchase => {
+      xml += '    <purchase>\n';
+      Object.entries(purchase).forEach(([key, value]) => {
+        if (key === 'items' && Array.isArray(value)) {
+          xml += '      <items>\n';
+          value.forEach(item => {
+            xml += '        <item>\n';
+            Object.entries(item).forEach(([itemKey, itemValue]) => {
+              xml += `          <${itemKey}>${escapeXml(String(itemValue))}</${itemKey}>\n`;
+            });
+            xml += '        </item>\n';
+          });
+          xml += '      </items>\n';
+        } else if (value !== null && value !== undefined) {
+          xml += `      <${key}>${escapeXml(String(value))}</${key}>\n`;
+        }
+      });
+      xml += '    </purchase>\n';
+    });
+    xml += '  </purchases>\n';
+  }
+  
+  xml += '</StoreControlBackup>';
+  return xml;
+}
+
 // Export data as XML compatible with spreadsheet programs
 export function exportAsXML(products: Product[], suppliers: Supplier[]): string {
   const exportData: ExportData = {

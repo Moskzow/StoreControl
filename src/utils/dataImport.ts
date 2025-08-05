@@ -74,6 +74,195 @@ export function importFromJSON(jsonContent: string): ImportResult {
   }
 }
 
+// Import complete data (new function for complete backup)
+export function importCompleteData(content: string, filename: string): ImportResult {
+  try {
+    // Determine format by filename or content
+    const isXML = filename.toLowerCase().endsWith('.xml') || 
+                  content.trim().startsWith('<?xml') || 
+                  content.includes('<StoreControlBackup>');
+    
+    if (isXML) {
+      return importCompleteDataFromXML(content);
+    } else {
+      return importCompleteDataFromJSON(content);
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Error al procesar el archivo de backup. Verifica que el formato sea válido.'
+    };
+  }
+}
+
+// Import complete data from JSON
+function importCompleteDataFromJSON(jsonContent: string): ImportResult {
+  try {
+    const data = JSON.parse(jsonContent);
+    
+    // Validate if it's a complete backup
+    if (data.version && (data.products || data.suppliers || data.customers)) {
+      return {
+        success: true,
+        message: 'Backup completo importado correctamente desde JSON.',
+        data: {
+          products: data.products || [],
+          suppliers: data.suppliers || [],
+          customers: data.customers || [],
+          customerTypes: data.customerTypes || [],
+          sales: data.sales || [],
+          purchases: data.purchases || [],
+          settings: data.settings || {},
+          companyInfo: data.companyInfo || null
+        }
+      };
+    }
+    
+    // Fallback to legacy format
+    return importFromJSON(jsonContent);
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Error al procesar el archivo JSON de backup.'
+    };
+  }
+}
+
+// Import complete data from XML
+function importCompleteDataFromXML(xmlContent: string): ImportResult {
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+    
+    // Check for parsing errors
+    const parserError = xmlDoc.querySelector('parsererror');
+    if (parserError) {
+      return {
+        success: false,
+        message: 'Error al procesar el archivo XML de backup.'
+      };
+    }
+    
+    const root = xmlDoc.documentElement;
+    
+    // Check if it's a complete backup
+    if (root.tagName === 'StoreControlBackup') {
+      const result = {
+        products: [],
+        suppliers: [],
+        customers: [],
+        customerTypes: [],
+        sales: [],
+        purchases: [],
+        settings: {},
+        companyInfo: null
+      };
+      
+      // Parse company info
+      const companyInfoNode = root.querySelector('companyInfo');
+      if (companyInfoNode) {
+        result.companyInfo = {};
+        Array.from(companyInfoNode.children).forEach(child => {
+          result.companyInfo[child.tagName] = child.textContent || '';
+        });
+      }
+      
+      // Parse settings
+      const settingsNode = root.querySelector('settings');
+      if (settingsNode) {
+        Array.from(settingsNode.children).forEach(child => {
+          const value = child.textContent || '';
+          if (child.tagName === 'lowStockThreshold') {
+            result.settings[child.tagName] = parseInt(value);
+          } else {
+            result.settings[child.tagName] = value;
+          }
+        });
+      }
+      
+      // Parse products
+      const productsNode = root.querySelector('products');
+      if (productsNode) {
+        const productNodes = productsNode.querySelectorAll('product');
+        productNodes.forEach(productNode => {
+          const product = parseProductFromXML(productNode);
+          if (product) {
+            result.products.push(product);
+          }
+        });
+      }
+      
+      // Parse suppliers
+      const suppliersNode = root.querySelector('suppliers');
+      if (suppliersNode) {
+        const supplierNodes = suppliersNode.querySelectorAll('supplier');
+        supplierNodes.forEach(supplierNode => {
+          const supplier = parseSupplierFromXML(supplierNode);
+          if (supplier) {
+            result.suppliers.push(supplier);
+          }
+        });
+      }
+      
+      // Parse customers
+      const customersNode = root.querySelector('customers');
+      if (customersNode) {
+        const customerNodes = customersNode.querySelectorAll('customer');
+        customerNodes.forEach(customerNode => {
+          const customer = {};
+          Array.from(customerNode.children).forEach(child => {
+            const value = child.textContent || '';
+            if (['totalPurchases'].includes(child.tagName)) {
+              customer[child.tagName] = parseFloat(value);
+            } else if (['isActive'].includes(child.tagName)) {
+              customer[child.tagName] = value === 'true';
+            } else {
+              customer[child.tagName] = value;
+            }
+          });
+          result.customers.push(customer);
+        });
+      }
+      
+      // Parse customer types
+      const customerTypesNode = root.querySelector('customerTypes');
+      if (customerTypesNode) {
+        const typeNodes = customerTypesNode.querySelectorAll('customerType');
+        typeNodes.forEach(typeNode => {
+          const type = {};
+          Array.from(typeNode.children).forEach(child => {
+            if (child.tagName === 'benefits') {
+              type[child.tagName] = Array.from(child.querySelectorAll('item')).map(item => item.textContent || '');
+            } else {
+              const value = child.textContent || '';
+              if (['profitMargin', 'minPurchaseAmount'].includes(child.tagName)) {
+                type[child.tagName] = parseFloat(value);
+              } else {
+                type[child.tagName] = value;
+              }
+            }
+          });
+          result.customerTypes.push(type);
+        });
+      }
+      
+      return {
+        success: true,
+        message: 'Backup completo importado correctamente desde XML.',
+        data: result
+      };
+    }
+    
+    // Fallback to legacy format
+    return importFromXML(xmlContent);
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Error al procesar el archivo XML de backup.'
+    };
+  }
+}
+
 // Import data from XML (supports both custom format and spreadsheet format)
 export function importFromXML(xmlContent: string): ImportResult {
   try {

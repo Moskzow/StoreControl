@@ -344,7 +344,7 @@ function Settings() {
             <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Formato de exportación
+                  Formato de exportación (Backup completo)
                 </label>
                 <div className="flex space-x-4">
                   <label className="flex items-center">
@@ -358,7 +358,7 @@ function Settings() {
                     />
                     <div className="ml-2 flex items-center">
                       <Code className="h-4 w-4 text-primary-500 mr-1" />
-                      <span className="text-sm">JSON</span>
+                      <span className="text-sm">JSON (Recomendado)</span>
                     </div>
                   </label>
                   
@@ -373,7 +373,7 @@ function Settings() {
                     />
                     <div className="ml-2 flex items-center">
                       <FileText className="h-4 w-4 text-secondary-500 mr-1" />
-                      <span className="text-sm">XML (Hoja de cálculo)</span>
+                      <span className="text-sm">XML (Compatible con Excel)</span>
                     </div>
                   </label>
                 </div>
@@ -386,11 +386,11 @@ function Settings() {
                   onClick={handleExportData}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Exportar como {selectedExportFormat.toUpperCase()}
+                  Exportar backup completo
                 </button>
                 
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  {products.length} productos, {suppliers.length} proveedores
+                  {products.length} productos, {suppliers.length} proveedores, {customers.length} clientes, {sales.length} ventas + configuración
                 </div>
               </div>
             </div>
@@ -399,25 +399,29 @@ function Settings() {
           {/* Import Section */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Importar datos
+              Importar datos (Restaurar backup)
             </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Importa productos y proveedores desde archivos JSON o XML.
+              Restaura un backup completo del sistema incluyendo todos los datos y configuración.
             </p>
             
             <div className="mt-4 space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/30 dark:border-blue-800">
                 <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                  Formatos soportados:
+                  Backup completo incluye:
                 </h4>
                 <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
                   <li className="flex items-center">
-                    <Code className="h-3 w-3 mr-2" />
-                    <strong>JSON:</strong> Formato estándar, fácil de leer y editar
+                    <FileText className="h-3 w-3 mr-2" />
+                    <strong>Datos:</strong> Productos, proveedores, clientes, ventas, compras
                   </li>
                   <li className="flex items-center">
-                    <FileText className="h-3 w-3 mr-2" />
-                    <strong>XML:</strong> Compatible con Excel, LibreOffice, Google Sheets y otros programas de hojas de cálculo
+                    <Palette className="h-3 w-3 mr-2" />
+                    <strong>Configuración:</strong> Tema, colores, logo, umbrales
+                  </li>
+                  <li className="flex items-center">
+                    <Building2 className="h-3 w-3 mr-2" />
+                    <strong>Empresa:</strong> Información completa de la empresa
                   </li>
                 </ul>
               </div>
@@ -437,11 +441,11 @@ function Settings() {
                   onClick={handleImportClick}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  Seleccionar archivo
+                  Restaurar backup
                 </button>
                 
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Archivos .json o .xml
+                  Archivos de backup .json o .xml
                 </div>
               </div>
               
@@ -452,6 +456,13 @@ function Settings() {
                   </p>
                 </div>
               )}
+              
+              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 dark:bg-warning-900/30 dark:border-warning-800">
+                <p className="text-sm text-warning-700 dark:text-warning-400">
+                  <strong>Importante:</strong> La importación agregará los datos al sistema actual. 
+                  Si deseas reemplazar completamente los datos, primero reinicia el sistema desde la zona de peligro.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -562,6 +573,12 @@ function Settings() {
           </div>
         </div>
       </Modal>
+      
+      {/* Theme Selector Modal */}
+      <ThemeSelector 
+        isOpen={isThemeSelectorOpen}
+        onClose={() => setIsThemeSelectorOpen(false)}
+      />
     </div>
   );
 }
