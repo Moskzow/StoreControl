@@ -141,7 +141,7 @@ function Suppliers() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Proveedores</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Gestiona los proveedores de productos
+            Administra los proveedores de productos
           </p>
         </div>
         
