@@ -15,6 +15,8 @@ function Settings() {
     setLowStockThreshold,
     products,
     suppliers,
+    customers,
+    sales,
     addProduct,
     addSupplier,
     companyInfo,
