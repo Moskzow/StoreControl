@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings as SettingsIcon, AlertTriangle, Save, Download, Upload, FileText, Code, Building2 } from 'lucide-react';
+import { Settings as SettingsIcon, AlertTriangle, Save, Download, Upload, FileText, Code, Building2, Palette } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { clearAllData } from '../utils/storage';
 import { exportAsJSON, exportAsXML, downloadFile } from '../utils/dataExport';
