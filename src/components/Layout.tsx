@@ -548,9 +548,6 @@ function Layout() {
           isSidebarCollapsed ? 'md:ml-0' : 'md:ml-0'
         }`}>
           <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-              {navItems.find(item => item.to === location.pathname)?.label || 'Dashboard'}
-            </h1>
           </div>
           
           <div className="animate-fade-in">

@@ -596,7 +596,7 @@ function Reports() {
       {/* Enhanced Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Centro de Reportes
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
