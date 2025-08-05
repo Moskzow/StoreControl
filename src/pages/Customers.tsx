@@ -1,33 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Trash, 
-  Edit, 
-  Search, 
-  Mail, 
-  Phone, 
-  User, 
-  UserPlus, 
-  Star, 
-  Crown, 
-  TrendingUp,
-  DollarSign,
-  Users,
-  Target,
-  Calendar,
-  MapPin,
-  CreditCard,
-  Settings,
-  Eye,
-  Award,
-  Zap,
-  Filter,
-  ArrowUpRight,
-  Building2,
-  UserCheck
-} from 'lucide-react';
+import { Plus, Trash, Edit, Search, Filter, Mail, Phone, MapPin, Calendar, DollarSign, User, Users } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { Customer, CustomerType } from '../types';
 import Modal from '../components/ui/Modal';
 import EmptyState from '../components/ui/EmptyState';
 import Pagination from '../components/ui/Pagination';
@@ -37,7 +10,6 @@ function Customers() {
   const { 
     customers, 
     customerTypes,
-    sales,
     addCustomer, 
     updateCustomer, 
     deleteCustomer,
@@ -46,6 +18,9 @@ function Customers() {
     deleteCustomerType
   } = useAppContext();
   
+  // State for active tab
+  const [activeTab, setActiveTab] = useState('customers');
+  
   // State for customer list
   const [filteredCustomers, setFilteredCustomers] = useState(customers);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,66 +28,20 @@ function Customers() {
   const [itemsPerPage] = useState(10);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const [filterSegment, setFilterSegment] = useState('');
-  const [filterCustomerType, setFilterCustomerType] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   
   // State for customer modal
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteCustomerModalOpen, setIsDeleteCustomerModalOpen] = useState(false);
+  const [currentCustomer, setCurrentCustomer] = useState(null);
+  
+  // State for customer type modal
   const [isCustomerTypeModalOpen, setIsCustomerTypeModalOpen] = useState(false);
-  const [isDeleteTypeModalOpen, setIsDeleteTypeModalOpen] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
-  const [currentCustomerType, setCurrentCustomerType] = useState<CustomerType | null>(null);
-  const [activeTab, setActiveTab] = useState<'customers' | 'types'>('customers');
+  const [isDeleteCustomerTypeModalOpen, setIsDeleteCustomerTypeModalOpen] = useState(false);
+  const [currentCustomerType, setCurrentCustomerType] = useState(null);
   
-  // Customer segmentation
-  const getCustomerSegment = (customer: Customer) => {
-    if (customer.totalPurchases === 0) return 'new';
-    if (customer.totalPurchases < 300) return 'regular';
-    if (customer.totalPurchases < 1000) return 'premium';
-    return 'vip';
-  };
-  
-  const getSegmentInfo = (segment: string) => {
-    const segments = {
-      new: { name: 'Nuevos', icon: UserPlus, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300', range: '€0' },
-      regular: { name: 'Habituales', icon: User, color: 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300', range: '€0-300' },
-      premium: { name: 'Premium', icon: Star, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-300', range: '€300-1000' },
-      vip: { name: 'VIP', icon: Crown, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300', range: '+€1000' }
-    };
-    return segments[segment] || segments.new;
-  };
-  
-  // Calculate metrics
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.filter(c => c.isActive).length;
-  const newCustomersThisMonth = customers.filter(c => {
-    const createdDate = new Date(c.createdAt);
-    const thisMonth = new Date();
-    return createdDate.getMonth() === thisMonth.getMonth() && 
-           createdDate.getFullYear() === thisMonth.getFullYear();
-  }).length;
-  
-  const vipCustomers = customers.filter(c => getCustomerSegment(c) === 'vip').length;
-  const averageCustomerValue = totalCustomers > 0 
-    ? customers.reduce((sum, c) => sum + c.totalPurchases, 0) / totalCustomers 
-    : 0;
-  
-  const customerRetentionRate = totalCustomers > 0 
-    ? (customers.filter(c => c.lastPurchaseDate && 
-        new Date(c.lastPurchaseDate) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).length / totalCustomers) * 100 
-    : 0;
-  
-  // Segment distribution
-  const segmentDistribution = {
-    new: customers.filter(c => getCustomerSegment(c) === 'new').length,
-    regular: customers.filter(c => getCustomerSegment(c) === 'regular').length,
-    premium: customers.filter(c => getCustomerSegment(c) === 'premium').length,
-    vip: customers.filter(c => getCustomerSegment(c) === 'vip').length
-  };
-  
-  // Filter and sort customers
+  // Filter and sort customers when dependencies change
   useEffect(() => {
     let result = [...customers];
     
@@ -123,18 +52,23 @@ function Customers() {
         customer => 
           customer.name.toLowerCase().includes(lowerSearchTerm) || 
           customer.email.toLowerCase().includes(lowerSearchTerm) ||
-          customer.phone.toLowerCase().includes(lowerSearchTerm)
+          customer.phone.toLowerCase().includes(lowerSearchTerm) ||
+          customer.city.toLowerCase().includes(lowerSearchTerm)
       );
     }
     
-    // Apply segment filter
-    if (filterSegment) {
-      result = result.filter(customer => getCustomerSegment(customer) === filterSegment);
+    // Apply type filter
+    if (filterType) {
+      result = result.filter(customer => customer.customerTypeId === filterType);
     }
     
-    // Apply customer type filter
-    if (filterCustomerType) {
-      result = result.filter(customer => customer.customerTypeId === filterCustomerType);
+    // Apply status filter
+    if (filterStatus) {
+      if (filterStatus === 'active') {
+        result = result.filter(customer => customer.isActive);
+      } else if (filterStatus === 'inactive') {
+        result = result.filter(customer => !customer.isActive);
+      }
     }
     
     // Apply sorting
@@ -143,21 +77,25 @@ function Customers() {
         return sortDirection === 'asc' 
           ? a.name.localeCompare(b.name) 
           : b.name.localeCompare(a.name);
+      } else if (sortField === 'email') {
+        return sortDirection === 'asc' 
+          ? a.email.localeCompare(b.email) 
+          : b.email.localeCompare(a.email);
       } else if (sortField === 'totalPurchases') {
         return sortDirection === 'asc' 
           ? a.totalPurchases - b.totalPurchases 
           : b.totalPurchases - a.totalPurchases;
-      } else if (sortField === 'lastPurchaseDate') {
-        const aDate = a.lastPurchaseDate ? new Date(a.lastPurchaseDate).getTime() : 0;
-        const bDate = b.lastPurchaseDate ? new Date(b.lastPurchaseDate).getTime() : 0;
-        return sortDirection === 'asc' ? aDate - bDate : bDate - aDate;
+      } else if (sortField === 'createdAt') {
+        return sortDirection === 'asc' 
+          ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
       return 0;
     });
     
     setFilteredCustomers(result);
     setCurrentPage(1);
-  }, [customers, searchTerm, sortField, sortDirection, filterSegment, filterCustomerType]);
+  }, [customers, searchTerm, sortField, sortDirection, filterType, filterStatus]);
   
   // Get current page items
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -165,7 +103,7 @@ function Customers() {
   const currentItems = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
   
   // Handle sorting
-  const handleSort = (field: string) => {
+  const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -174,7 +112,7 @@ function Customers() {
     }
   };
   
-  // Initialize new customer
+  // Initialize new customer form
   const initNewCustomer = () => {
     setCurrentCustomer({
       id: Date.now().toString(),
@@ -184,8 +122,11 @@ function Customers() {
       address: '',
       city: '',
       postalCode: '',
+      taxId: '',
       customerType: 'individual',
       customerTypeId: customerTypes[0]?.id || '',
+      preferredPaymentMethod: 'cash',
+      creditLimit: 0,
       notes: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -195,7 +136,7 @@ function Customers() {
     setIsCustomerModalOpen(true);
   };
   
-  // Initialize new customer type
+  // Initialize new customer type form
   const initNewCustomerType = () => {
     setCurrentCustomerType({
       id: Date.now().toString(),
@@ -210,40 +151,34 @@ function Customers() {
   };
   
   // Edit customer
-  const handleEditCustomer = (customer: Customer) => {
+  const handleEditCustomer = (customer) => {
     setCurrentCustomer({ ...customer });
     setIsCustomerModalOpen(true);
   };
   
   // Edit customer type
-  const handleEditCustomerType = (customerType: CustomerType) => {
+  const handleEditCustomerType = (customerType) => {
     setCurrentCustomerType({ ...customerType });
     setIsCustomerTypeModalOpen(true);
   };
   
-  // View customer details
-  const handleViewCustomer = (customer: Customer) => {
-    setCurrentCustomer(customer);
-    setIsDetailModalOpen(true);
-  };
-  
   // Delete customer
-  const handleDeleteCustomer = (customer: Customer) => {
+  const handleDeleteCustomer = (customer) => {
     setCurrentCustomer(customer);
-    setIsDeleteModalOpen(true);
+    setIsDeleteCustomerModalOpen(true);
   };
   
   // Delete customer type
-  const handleDeleteCustomerType = (customerType: CustomerType) => {
+  const handleDeleteCustomerType = (customerType) => {
     setCurrentCustomerType(customerType);
-    setIsDeleteTypeModalOpen(true);
+    setIsDeleteCustomerTypeModalOpen(true);
   };
   
   // Confirm delete customer
   const confirmDeleteCustomer = () => {
     if (currentCustomer) {
       deleteCustomer(currentCustomer.id);
-      setIsDeleteModalOpen(false);
+      setIsDeleteCustomerModalOpen(false);
     }
   };
   
@@ -251,12 +186,12 @@ function Customers() {
   const confirmDeleteCustomerType = () => {
     if (currentCustomerType) {
       deleteCustomerType(currentCustomerType.id);
-      setIsDeleteTypeModalOpen(false);
+      setIsDeleteCustomerTypeModalOpen(false);
     }
   };
   
   // Save customer
-  const handleSaveCustomer = (e: React.FormEvent) => {
+  const handleSaveCustomer = (e) => {
     e.preventDefault();
     
     if (currentCustomer) {
@@ -265,6 +200,7 @@ function Customers() {
         updatedAt: new Date().toISOString()
       };
       
+      // Update or add new customer
       if (customers.some(c => c.id === currentCustomer.id)) {
         updateCustomer(updatedCustomer);
       } else {
@@ -276,10 +212,11 @@ function Customers() {
   };
   
   // Save customer type
-  const handleSaveCustomerType = (e: React.FormEvent) => {
+  const handleSaveCustomerType = (e) => {
     e.preventDefault();
     
     if (currentCustomerType) {
+      // Update or add new customer type
       if (customerTypes.some(ct => ct.id === currentCustomerType.id)) {
         updateCustomerType(currentCustomerType);
       } else {
@@ -290,79 +227,57 @@ function Customers() {
     }
   };
   
-  // Handle customer form changes
-  const handleCustomerChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
+  // Handle form field changes
+  const handleCustomerChange = (e) => {
+    const { name, value, type, checked } = e.target;
     
-    setCurrentCustomer(prev => prev ? {
+    setCurrentCustomer(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    } : null);
+      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value
+    }));
   };
   
-  // Handle customer type form changes
-  const handleCustomerTypeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Handle customer type form field changes
+  const handleCustomerTypeChange = (e) => {
     const { name, value, type } = e.target;
     
-    setCurrentCustomerType(prev => prev ? {
+    setCurrentCustomerType(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) : value
-    } : null);
+      [name]: type === 'number' ? parseFloat(value) || 0 : value
+    }));
+  };
+  
+  // Handle benefits change
+  const handleBenefitsChange = (benefits) => {
+    setCurrentCustomerType(prev => ({
+      ...prev,
+      benefits
+    }));
   };
   
   // Get customer type name
-  const getCustomerTypeName = (customerTypeId?: string) => {
-    if (!customerTypeId) return 'Sin tipo';
-    const customerType = customerTypes.find(ct => ct.id === customerTypeId);
-    return customerType?.name || 'Tipo desconocido';
+  const getCustomerTypeName = (customerTypeId) => {
+    const type = customerTypes.find(ct => ct.id === customerTypeId);
+    return type ? type.name : 'Sin tipo';
   };
   
-  // Get customer sales
-  const getCustomerSales = (customerId: string) => {
-    return sales.filter(sale => sale.customerId === customerId);
+  // Get customers count by type
+  const getCustomersCountByType = (typeId) => {
+    return customers.filter(customer => customer.customerTypeId === typeId).length;
   };
   
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Header and tabs */}
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Gestión de Clientes
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Administra clientes y tipos de cliente con precios diferenciados
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Clientes</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Administra los clientes y tipos de cliente
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-gray-100 rounded-lg p-1 dark:bg-gray-800">
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'customers'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-              onClick={() => setActiveTab('customers')}
-            >
-              <Users className="h-4 w-4 mr-2 inline" />
-              Clientes
-            </button>
-            <button
-              type="button"
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'types'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-              onClick={() => setActiveTab('types')}
-            >
-              <Settings className="h-4 w-4 mr-2 inline" />
-              Tipos de Cliente
-            </button>
-          </div>
-          
+        <div className="flex space-x-2">
           {activeTab === 'customers' ? (
             <button
               type="button"
@@ -370,7 +285,7 @@ function Customers() {
               onClick={initNewCustomer}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Cliente
+              Nuevo cliente
             </button>
           ) : (
             <button
@@ -379,203 +294,61 @@ function Customers() {
               onClick={initNewCustomerType}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Tipo
+              Nuevo tipo
             </button>
           )}
         </div>
       </div>
       
-      {activeTab === 'customers' ? (
+      {/* Tabs */}
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            type="button"
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'customers'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveTab('customers')}
+          >
+            <User className="h-4 w-4 mr-2 inline" />
+            Clientes ({customers.length})
+          </button>
+          <button
+            type="button"
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'customerTypes'
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setActiveTab('customerTypes')}
+          >
+            <Users className="h-4 w-4 mr-2 inline" />
+            Tipos de Cliente ({customerTypes.length})
+          </button>
+        </nav>
+      </div>
+      
+      {/* Customers Tab */}
+      {activeTab === 'customers' && (
         <>
-          {/* Analytics Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-primary-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Total Clientes
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {totalCustomers}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <TrendingUp className="h-4 w-4 text-success-500 mr-1" />
-                    <span className="text-sm text-success-600 dark:text-success-400">
-                      +{newCustomersThisMonth} este mes
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-primary-100 rounded-full dark:bg-primary-900">
-                  <Users className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-success-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Clientes Activos
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {activeCustomers}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {totalCustomers > 0 ? Math.round((activeCustomers / totalCustomers) * 100) : 0}% del total
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-success-100 rounded-full dark:bg-success-900">
-                  <UserCheck className="h-6 w-6 text-success-600 dark:text-success-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-warning-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Clientes VIP
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {vipCustomers}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <Crown className="h-4 w-4 text-warning-500 mr-1" />
-                    <span className="text-sm text-warning-600 dark:text-warning-400">
-                      Elite
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-warning-100 rounded-full dark:bg-warning-900">
-                  <Crown className="h-6 w-6 text-warning-600 dark:text-warning-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-accent-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Valor Promedio
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {formatCurrency(averageCustomerValue)}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <DollarSign className="h-4 w-4 text-accent-500 mr-1" />
-                    <span className="text-sm text-accent-600 dark:text-accent-400">
-                      CLV
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-accent-100 rounded-full dark:bg-accent-900">
-                  <Target className="h-6 w-6 text-accent-600 dark:text-accent-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-secondary-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Retención
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {customerRetentionRate.toFixed(1)}%
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Últimos 90 días
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-secondary-100 rounded-full dark:bg-secondary-900">
-                  <Zap className="h-6 w-6 text-secondary-600 dark:text-secondary-400" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4 border-purple-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Tipos de Cliente
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {customerTypes.length}
-                  </p>
-                  <div className="flex items-center mt-2">
-                    <Award className="h-4 w-4 text-purple-500 mr-1" />
-                    <span className="text-sm text-purple-600 dark:text-purple-400">
-                      Configurados
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full dark:bg-purple-900">
-                  <Award className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Segment Distribution */}
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-              Distribución por Segmentos
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(segmentDistribution).map(([segment, count]) => {
-                const segmentInfo = getSegmentInfo(segment);
-                const Icon = segmentInfo.icon;
-                const percentage = totalCustomers > 0 ? (count / totalCustomers) * 100 : 0;
-                
-                return (
-                  <div key={segment} className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className={`p-2 rounded-lg ${segmentInfo.color}`}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">{count}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{percentage.toFixed(1)}%</p>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <p className="font-medium text-gray-900 dark:text-white">{segmentInfo.name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{segmentInfo.range}</p>
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-700">
-                      <div 
-                        className="h-full bg-gradient-to-r from-primary-500 to-primary-600" 
-                        style={{ width: `${percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Filters and Search */}
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
+          {/* Filters and search */}
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0">
+            <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
                 className="input pl-10"
-                placeholder="Buscar por nombre, email o teléfono..."
+                placeholder="Buscar por nombre, email, teléfono o ciudad..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex space-x-4">
               <div className="w-48">
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -583,40 +356,38 @@ function Customers() {
                   </div>
                   <select
                     className="select pl-10"
-                    value={filterSegment}
-                    onChange={(e) => setFilterSegment(e.target.value)}
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
                   >
-                    <option value="">Todos los segmentos</option>
-                    <option value="new">Nuevos</option>
-                    <option value="regular">Habituales</option>
-                    <option value="premium">Premium</option>
-                    <option value="vip">VIP</option>
+                    <option value="">Todos los tipos</option>
+                    {customerTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
               
-              <div className="w-48">
+              <div className="w-32">
                 <select
                   className="select"
-                  value={filterCustomerType}
-                  onChange={(e) => setFilterCustomerType(e.target.value)}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
                 >
-                  <option value="">Todos los tipos</option>
-                  {customerTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
+                  <option value="">Todos</option>
+                  <option value="active">Activos</option>
+                  <option value="inactive">Inactivos</option>
                 </select>
               </div>
             </div>
           </div>
           
-          {/* Customer List */}
+          {/* Customer list */}
           {filteredCustomers.length === 0 ? (
             <EmptyState
               title="No hay clientes"
-              description={searchTerm || filterSegment || filterCustomerType ? "No hay clientes que coincidan con los filtros aplicados." : "Comienza agregando tu primer cliente."}
+              description={searchTerm || filterType || filterStatus ? "No hay clientes que coincidan con los filtros aplicados." : "Comienza agregando tu primer cliente."}
               action={
                 <button
                   type="button"
@@ -624,7 +395,7 @@ function Customers() {
                   onClick={initNewCustomer}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Nuevo Cliente
+                  Nuevo cliente
                 </button>
               }
             />
@@ -639,7 +410,7 @@ function Customers() {
                         onClick={() => handleSort('name')}
                       >
                         <div className="flex items-center">
-                          <span>Cliente</span>
+                          <span>Nombre</span>
                           {sortField === 'name' && (
                             <span className="ml-1">
                               {sortDirection === 'asc' ? '↑' : '↓'}
@@ -647,8 +418,19 @@ function Customers() {
                           )}
                         </div>
                       </th>
-                      <th>Contacto</th>
-                      <th>Segmento</th>
+                      <th 
+                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => handleSort('email')}
+                      >
+                        <div className="flex items-center">
+                          <span>Contacto</span>
+                          {sortField === 'email' && (
+                            <span className="ml-1">
+                              {sortDirection === 'asc' ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </div>
+                      </th>
                       <th>Tipo</th>
                       <th 
                         className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -663,151 +445,101 @@ function Customers() {
                           )}
                         </div>
                       </th>
-                      <th 
-                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => handleSort('lastPurchaseDate')}
-                      >
-                        <div className="flex items-center">
-                          <span>Última Compra</span>
-                          {sortField === 'lastPurchaseDate' && (
-                            <span className="ml-1">
-                              {sortDirection === 'asc' ? '↑' : '↓'}
-                            </span>
-                          )}
-                        </div>
-                      </th>
                       <th>Estado</th>
                       <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentItems.map((customer) => {
-                      const segment = getCustomerSegment(customer);
-                      const segmentInfo = getSegmentInfo(segment);
-                      const Icon = segmentInfo.icon;
-                      
-                      return (
-                        <tr key={customer.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td>
-                            <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-full ${segmentInfo.color}`}>
-                                <Icon className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                  {customer.name}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {customer.customerType === 'business' ? (
-                                    <div className="flex items-center">
-                                      <Building2 className="h-3 w-3 mr-1" />
-                                      Empresa
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center">
-                                      <User className="h-3 w-3 mr-1" />
-                                      Particular
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
+                    {currentItems.map((customer) => (
+                      <tr key={customer.id} className="group">
+                        <td>
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {customer.name}
                             </div>
-                          </td>
-                          <td>
-                            <div className="space-y-1">
-                              <div className="flex items-center text-sm">
-                                <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                                <a href={`mailto:${customer.email}`} className="text-primary-600 hover:text-primary-700 dark:text-primary-400">
-                                  {customer.email}
-                                </a>
-                              </div>
-                              <div className="flex items-center text-sm">
-                                <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                                <a href={`tel:${customer.phone}`} className="text-primary-600 hover:text-primary-700 dark:text-primary-400">
-                                  {customer.phone}
-                                </a>
-                              </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {customer.city && (
+                                <span className="flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {customer.city}
+                                </span>
+                              )}
                             </div>
-                          </td>
-                          <td>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${segmentInfo.color}`}>
-                              <Icon className="h-3 w-3 mr-1" />
-                              {segmentInfo.name}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {getCustomerTypeName(customer.customerTypeId)}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="text-sm">
-                              <div className="font-medium text-gray-900 dark:text-white">
-                                {formatCurrency(customer.totalPurchases)}
-                              </div>
-                              <div className="text-gray-500 dark:text-gray-400">
-                                {getCustomerSales(customer.id).length} pedidos
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            {customer.lastPurchaseDate ? (
-                              <div className="text-sm">
-                                <div className="text-gray-900 dark:text-white">
-                                  {formatDate(customer.lastPurchaseDate)}
-                                </div>
-                                <div className="text-gray-500 dark:text-gray-400">
-                                  {Math.floor((Date.now() - new Date(customer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} días
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 dark:text-gray-500">Sin compras</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="space-y-1">
+                            {customer.email && (
+                              <a 
+                                href={`mailto:${customer.email}`} 
+                                className="flex items-center text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                              >
+                                <Mail className="h-3 w-3 mr-1" />
+                                {customer.email}
+                              </a>
                             )}
-                          </td>
-                          <td>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              customer.isActive 
-                                ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                            }`}>
-                              {customer.isActive ? 'Activo' : 'Inactivo'}
+                            {customer.phone && (
+                              <a 
+                                href={`tel:${customer.phone}`} 
+                                className="flex items-center text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                              >
+                                <Phone className="h-3 w-3 mr-1" />
+                                {customer.phone}
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-900 dark:text-primary-300">
+                            {getCustomerTypeName(customer.customerTypeId)}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex items-center">
+                            <DollarSign className="h-4 w-4 text-success-500 mr-1" />
+                            <span className="font-medium">
+                              {formatCurrency(customer.totalPurchases)}
                             </span>
-                          </td>
-                          <td>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                type="button"
-                                className="rounded p-1 text-gray-500 hover:bg-primary-100 hover:text-primary-700 dark:text-gray-400 dark:hover:bg-primary-900 dark:hover:text-primary-300"
-                                onClick={() => handleViewCustomer(customer)}
-                                title="Ver detalles"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                                onClick={() => handleEditCustomer(customer)}
-                                title="Editar"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded p-1 text-gray-500 hover:bg-error-100 hover:text-error-700 dark:text-gray-400 dark:hover:bg-error-900 dark:hover:text-error-300"
-                                onClick={() => handleDeleteCustomer(customer)}
-                                title="Eliminar"
-                              >
-                                <Trash className="h-4 w-4" />
-                              </button>
+                          </div>
+                          {customer.lastPurchaseDate && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {formatDate(customer.lastPurchaseDate)}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          )}
+                        </td>
+                        <td>
+                          <span className={`badge ${
+                            customer.isActive ? 'badge-success' : 'badge-error'
+                          }`}>
+                            {customer.isActive ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                              onClick={() => handleEditCustomer(customer)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded p-1 text-gray-500 hover:bg-error-100 hover:text-error-700 dark:text-gray-400 dark:hover:bg-error-900 dark:hover:text-error-300"
+                              onClick={() => handleDeleteCustomer(customer)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
               
+              {/* Pagination */}
               <Pagination
                 currentPage={currentPage}
                 totalPages={Math.ceil(filteredCustomers.length / itemsPerPage)}
@@ -817,123 +549,122 @@ function Customers() {
             </div>
           )}
         </>
-      ) : (
+      )}
+      
+      {/* Customer Types Tab */}
+      {activeTab === 'customerTypes' && (
         <>
-          {/* Customer Types Management */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Tipos de Cliente Configurados
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Aministra tipos de clientes y márgenes de beneficio
-                </p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {customerTypes.map((customerType) => {
-                const customersOfType = customers.filter(c => c.customerTypeId === customerType.id).length;
-                
-                return (
-                  <div key={customerType.id} className="relative group">
-                    <div className="card p-6 hover:shadow-lg transition-all duration-200 border-l-4" style={{ borderLeftColor: customerType.color || '#3B82F6' }}>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {customerType.name}
-                          </h4>
-                          {customerType.description && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              {customerType.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                            onClick={() => handleEditCustomerType(customerType)}
-                            title="Editar tipo"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded p-1 text-gray-500 hover:bg-error-100 hover:text-error-700 dark:text-gray-400 dark:hover:bg-error-900 dark:hover:text-error-300"
-                            onClick={() => handleDeleteCustomerType(customerType)}
-                            title="Eliminar tipo"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">Margen de beneficio:</span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {(customerType.profitMargin * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        
-                        {customerType.minPurchaseAmount && customerType.minPurchaseAmount > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Compra mínima:</span>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {formatCurrency(customerType.minPurchaseAmount)}
-                            </span>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500 dark:text-gray-400">Clientes:</span>
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {customersOfType}
-                          </span>
-                        </div>
-                        
-                        {customerType.benefits && customerType.benefits.length > 0 && (
-                          <div className="mt-3">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">Beneficios:</span>
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {customerType.benefits.slice(0, 2).map((benefit, index) => (
-                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                  {benefit}
-                                </span>
-                              ))}
-                              {customerType.benefits.length > 2 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                  +{customerType.benefits.length - 2} más
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+          {/* Customer types grid */}
+          {customerTypes.length === 0 ? (
+            <EmptyState
+              title="No hay tipos de cliente"
+              description="Comienza agregando tu primer tipo de cliente."
+              action={
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={initNewCustomerType}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo tipo
+                </button>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {customerTypes.map((customerType) => (
+                <div
+                  key={customerType.id}
+                  className="card p-6 hover:shadow-lg transition-shadow group"
+                  style={{ borderLeft: `4px solid ${customerType.color || '#3B82F6'}` }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {customerType.name}
+                    </h3>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                      <button
+                        type="button"
+                        className="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                        onClick={() => handleEditCustomerType(customerType)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded p-1 text-gray-500 hover:bg-error-100 hover:text-error-700 dark:text-gray-400 dark:hover:bg-error-900 dark:hover:text-error-300"
+                        onClick={() => handleDeleteCustomerType(customerType)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Margen de beneficio:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {(customerType.profitMargin * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Clientes:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {getCustomersCountByType(customerType.id)}
+                      </span>
+                    </div>
+                    
+                    {customerType.minPurchaseAmount && customerType.minPurchaseAmount > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Compra mínima:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {formatCurrency(customerType.minPurchaseAmount)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {customerType.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        {customerType.description}
+                      </p>
+                    )}
+                    
+                    {customerType.benefits && customerType.benefits.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Beneficios:</p>
+                        <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                          {customerType.benefits.map((benefit, index) => (
+                            <li key={index} className="flex items-center">
+                              <span className="w-1 h-1 bg-primary-500 rounded-full mr-2"></span>
+                              {benefit}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </>
       )}
       
-      {/* Customer Modal */}
+      {/* Add/Edit Customer Modal */}
       <Modal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
-        title={currentCustomer && customers.some(c => c.id === currentCustomer.id) ? "Editar Cliente" : "Nuevo Cliente"}
-        size="lg"
+        title={currentCustomer && customers.some(c => c.id === currentCustomer.id) ? "Editar cliente" : "Nuevo cliente"}
+        size="xl"
       >
         {currentCustomer && (
           <form onSubmit={handleSaveCustomer}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Información Personal
+                  Información básica
                 </h3>
                 
                 <div>
@@ -950,68 +681,80 @@ function Customers() {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="input mt-1"
-                    value={currentCustomer.email}
-                    onChange={handleCustomerChange}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Teléfono *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    className="input mt-1"
-                    value={currentCustomer.phone}
-                    onChange={handleCustomerChange}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tipo de cliente
-                  </label>
-                  <select
-                    name="customerType"
-                    className="select mt-1"
-                    value={currentCustomer.customerType}
-                    onChange={handleCustomerChange}
-                  >
-                    <option value="individual">Particular</option>
-                    <option value="business">Empresa</option>
-                  </select>
-                </div>
-                
-                {currentCustomer.customerType === 'business' && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      NIF/CIF
+                      Email
                     </label>
                     <input
-                      type="text"
-                      name="taxId"
+                      type="email"
+                      name="email"
                       className="input mt-1"
-                      value={currentCustomer.taxId || ''}
+                      value={currentCustomer.email}
                       onChange={handleCustomerChange}
                     />
                   </div>
-                )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      className="input mt-1"
+                      value={currentCustomer.phone}
+                      onChange={handleCustomerChange}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    className="input mt-1"
+                    value={currentCustomer.address}
+                    onChange={handleCustomerChange}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Ciudad
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      className="input mt-1"
+                      value={currentCustomer.city}
+                      onChange={handleCustomerChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Código postal
+                    </label>
+                    <input
+                      type="text"
+                      name="postalCode"
+                      className="input mt-1"
+                      value={currentCustomer.postalCode}
+                      onChange={handleCustomerChange}
+                    />
+                  </div>
+                </div>
               </div>
               
+              {/* Business Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Información Comercial
+                  Información comercial
                 </h3>
                 
                 <div>
@@ -1021,17 +764,47 @@ function Customers() {
                   <select
                     name="customerTypeId"
                     className="select mt-1"
-                    value={currentCustomer.customerTypeId || ''}
+                    value={currentCustomer.customerTypeId}
                     onChange={handleCustomerChange}
                     required
                   >
-                    <option value="">Seleccionar tipo</option>
+                    <option value="">Selecciona un tipo</option>
                     {customerTypes.map((type) => (
                       <option key={type.id} value={type.id}>
                         {type.name} ({(type.profitMargin * 100).toFixed(1)}% margen)
                       </option>
                     ))}
                   </select>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Tipo de persona
+                    </label>
+                    <select
+                      name="customerType"
+                      className="select mt-1"
+                      value={currentCustomer.customerType}
+                      onChange={handleCustomerChange}
+                    >
+                      <option value="individual">Particular</option>
+                      <option value="business">Empresa</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      NIF/CIF
+                    </label>
+                    <input
+                      type="text"
+                      name="taxId"
+                      className="input mt-1"
+                      value={currentCustomer.taxId}
+                      onChange={handleCustomerChange}
+                    />
+                  </div>
                 </div>
                 
                 <div>
@@ -1041,10 +814,9 @@ function Customers() {
                   <select
                     name="preferredPaymentMethod"
                     className="select mt-1"
-                    value={currentCustomer.preferredPaymentMethod || ''}
+                    value={currentCustomer.preferredPaymentMethod}
                     onChange={handleCustomerChange}
                   >
-                    <option value="">Sin preferencia</option>
                     <option value="cash">Efectivo</option>
                     <option value="card">Tarjeta</option>
                     <option value="bizum">Bizum</option>
@@ -1067,7 +839,7 @@ function Customers() {
                       className="input pl-7"
                       min="0"
                       step="0.01"
-                      value={currentCustomer.creditLimit || ''}
+                      value={currentCustomer.creditLimit}
                       onChange={handleCustomerChange}
                     />
                   </div>
@@ -1075,56 +847,33 @@ function Customers() {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Dirección
+                    Notas
                   </label>
-                  <input
-                    type="text"
-                    name="address"
+                  <textarea
+                    name="notes"
+                    rows={3}
                     className="input mt-1"
-                    value={currentCustomer.address}
+                    value={currentCustomer.notes}
                     onChange={handleCustomerChange}
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Ciudad
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      className="input mt-1"
-                      value={currentCustomer.city}
-                      onChange={handleCustomerChange}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Código postal
-                    </label>
-                    <input
-                      type="text"
-                      name="postalCode"
-                      className="input mt-1"
-                      value={currentCustomer.postalCode}
-                      onChange={handleCustomerChange}
-                    />
-                  </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    name="isActive"
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:focus:ring-primary-600"
+                    checked={currentCustomer.isActive}
+                    onChange={handleCustomerChange}
+                  />
+                  <label
+                    htmlFor="isActive"
+                    className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    Cliente activo
+                  </label>
                 </div>
-              </div>
-              
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Notas
-                </label>
-                <textarea
-                  name="notes"
-                  rows={3}
-                  className="input mt-1"
-                  value={currentCustomer.notes}
-                  onChange={handleCustomerChange}
-                />
               </div>
             </div>
             
@@ -1144,11 +893,11 @@ function Customers() {
         )}
       </Modal>
       
-      {/* Customer Type Modal */}
+      {/* Add/Edit Customer Type Modal */}
       <Modal
         isOpen={isCustomerTypeModalOpen}
         onClose={() => setIsCustomerTypeModalOpen(false)}
-        title={currentCustomerType && customerTypes.some(ct => ct.id === currentCustomerType.id) ? "Editar Tipo de Cliente" : "Nuevo Tipo de Cliente"}
+        title={currentCustomerType && customerTypes.some(ct => ct.id === currentCustomerType.id) ? "Editar tipo de cliente" : "Nuevo tipo de cliente"}
         size="md"
       >
         {currentCustomerType && (
@@ -1156,7 +905,7 @@ function Customers() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Nombre del tipo *
+                  Nombre *
                 </label>
                 <input
                   type="text"
@@ -1178,7 +927,7 @@ function Customers() {
                     name="profitMargin"
                     className="input pr-8"
                     min="0"
-                    max="1"
+                    max="5"
                     step="0.01"
                     value={currentCustomerType.profitMargin}
                     onChange={handleCustomerTypeChange}
@@ -1189,7 +938,7 @@ function Customers() {
                   </div>
                 </div>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Ejemplo: 0.20 = 20% de margen
+                  Ejemplo: 0.25 = 25% de margen
                 </p>
               </div>
               
@@ -1201,9 +950,8 @@ function Customers() {
                   name="description"
                   rows={3}
                   className="input mt-1"
-                  value={currentCustomerType.description || ''}
+                  value={currentCustomerType.description}
                   onChange={handleCustomerTypeChange}
-                  placeholder="Descripción del tipo de cliente..."
                 />
               </div>
               
@@ -1221,7 +969,7 @@ function Customers() {
                     className="input pl-7"
                     min="0"
                     step="0.01"
-                    value={currentCustomerType.minPurchaseAmount || ''}
+                    value={currentCustomerType.minPurchaseAmount}
                     onChange={handleCustomerTypeChange}
                   />
                 </div>
@@ -1229,15 +977,59 @@ function Customers() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Color de identificación
+                  Color identificativo
                 </label>
                 <input
                   type="color"
                   name="color"
                   className="mt-1 h-10 w-20 rounded border border-gray-300 dark:border-gray-600"
-                  value={currentCustomerType.color || '#3B82F6'}
+                  value={currentCustomerType.color}
                   onChange={handleCustomerTypeChange}
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Beneficios
+                </label>
+                <div className="space-y-2">
+                  {(currentCustomerType.benefits || []).map((benefit, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        className="input flex-1"
+                        value={benefit}
+                        onChange={(e) => {
+                          const newBenefits = [...(currentCustomerType.benefits || [])];
+                          newBenefits[index] = e.target.value;
+                          handleBenefitsChange(newBenefits);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline text-error-600 border-error-300 hover:bg-error-50 dark:text-error-400 dark:border-error-800 dark:hover:bg-error-900/30 px-2"
+                        onClick={() => {
+                          const newBenefits = [...(currentCustomerType.benefits || [])];
+                          newBenefits.splice(index, 1);
+                          handleBenefitsChange(newBenefits);
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn btn-outline w-full"
+                    onClick={() => {
+                      const newBenefits = [...(currentCustomerType.benefits || []), ''];
+                      handleBenefitsChange(newBenefits);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar beneficio
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -1257,233 +1049,10 @@ function Customers() {
         )}
       </Modal>
       
-      {/* Customer Detail Modal */}
+      {/* Delete Customer Confirmation Modal */}
       <Modal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        title="Detalles del Cliente"
-        size="xl"
-      >
-        {currentCustomer && (
-          <div className="space-y-6">
-            {/* Customer Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-full ${getSegmentInfo(getCustomerSegment(currentCustomer)).color}`}>
-                  {React.createElement(getSegmentInfo(getCustomerSegment(currentCustomer)).icon, { className: "h-6 w-6" })}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {currentCustomer.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {getSegmentInfo(getCustomerSegment(currentCustomer)).name} • {getCustomerTypeName(currentCustomer.customerTypeId)}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => {
-                  setIsDetailModalOpen(false);
-                  handleEditCustomer(currentCustomer);
-                }}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </button>
-            </div>
-            
-            {/* Customer Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Compras</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {formatCurrency(currentCustomer.totalPurchases)}
-                    </p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-primary-500" />
-                </div>
-              </div>
-              
-              <div className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Número de Pedidos</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {getCustomerSales(currentCustomer.id).length}
-                    </p>
-                  </div>
-                  <Target className="h-8 w-8 text-success-500" />
-                </div>
-              </div>
-              
-              <div className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Última Compra</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {currentCustomer.lastPurchaseDate 
-                        ? `${Math.floor((Date.now() - new Date(currentCustomer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} días`
-                        : 'Nunca'
-                      }
-                    </p>
-                  </div>
-                  <Calendar className="h-8 w-8 text-accent-500" />
-                </div>
-              </div>
-            </div>
-            
-            {/* Customer Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Información de Contacto
-                </h4>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <a href={`mailto:${currentCustomer.email}`} className="text-primary-600 hover:text-primary-700 dark:text-primary-400">
-                      {currentCustomer.email}
-                    </a>
-                  </div>
-                  
-                  <div className="flex items-center space-x-3">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <a href={`tel:${currentCustomer.phone}`} className="text-primary-600 hover:text-primary-700 dark:text-primary-400">
-                      {currentCustomer.phone}
-                    </a>
-                  </div>
-                  
-                  {currentCustomer.address && (
-                    <div className="flex items-start space-x-3">
-                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
-                      <div>
-                        <p className="text-gray-900 dark:text-white">{currentCustomer.address}</p>
-                        {(currentCustomer.city || currentCustomer.postalCode) && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {currentCustomer.city} {currentCustomer.postalCode}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {currentCustomer.preferredPaymentMethod && (
-                    <div className="flex items-center space-x-3">
-                      <CreditCard className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-900 dark:text-white">
-                        {currentCustomer.preferredPaymentMethod === 'cash' && 'Efectivo'}
-                        {currentCustomer.preferredPaymentMethod === 'card' && 'Tarjeta'}
-                        {currentCustomer.preferredPaymentMethod === 'bizum' && 'Bizum'}
-                        {currentCustomer.preferredPaymentMethod === 'installments' && 'Plazos'}
-                        {currentCustomer.preferredPaymentMethod === 'monthly' && 'Giro mensual'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Información Comercial
-                </h4>
-                
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Tipo de cliente:</span>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {getCustomerTypeName(currentCustomer.customerTypeId)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Segmento:</span>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {getSegmentInfo(getCustomerSegment(currentCustomer)).name}
-                    </p>
-                  </div>
-                  
-                  {currentCustomer.creditLimit && (
-                    <div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Límite de crédito:</span>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(currentCustomer.creditLimit)}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Estado:</span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${
-                      currentCustomer.isActive 
-                        ? 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-300'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300'
-                    }`}>
-                      {currentCustomer.isActive ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Recent Orders */}
-            <div>
-              <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Pedidos Recientes
-              </h4>
-              
-              {getCustomerSales(currentCustomer.id).length > 0 ? (
-                <div className="table-container">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Total</th>
-                        <th>Método de Pago</th>
-                        <th>Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getCustomerSales(currentCustomer.id)
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .slice(0, 5)
-                        .map((sale) => (
-                          <tr key={sale.id}>
-                            <td>{formatDate(sale.date, true)}</td>
-                            <td>{formatCurrency(sale.total)}</td>
-                            <td>
-                              {sale.paymentMethod === 'cash' && 'Efectivo'}
-                              {sale.paymentMethod === 'card' && 'Tarjeta'}
-                              {sale.paymentMethod === 'bizum' && 'Bizum'}
-                              {sale.paymentMethod === 'installments' && 'Plazos'}
-                              {sale.paymentMethod === 'monthly' && 'Giro mensual'}
-                            </td>
-                            <td>
-                              <span className="badge badge-success">Completado</span>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                  Este cliente aún no ha realizado ningún pedido.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
-      
-      {/* Delete Customer Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        isOpen={isDeleteCustomerModalOpen}
+        onClose={() => setIsDeleteCustomerModalOpen(false)}
         title="Confirmar eliminación"
         size="sm"
       >
@@ -1500,7 +1069,7 @@ function Customers() {
               <button
                 type="button"
                 className="btn btn-outline"
-                onClick={() => setIsDeleteModalOpen(false)}
+                onClick={() => setIsDeleteCustomerModalOpen(false)}
               >
                 Cancelar
               </button>
@@ -1516,10 +1085,10 @@ function Customers() {
         )}
       </Modal>
       
-      {/* Delete Customer Type Modal */}
+      {/* Delete Customer Type Confirmation Modal */}
       <Modal
-        isOpen={isDeleteTypeModalOpen}
-        onClose={() => setIsDeleteTypeModalOpen(false)}
+        isOpen={isDeleteCustomerTypeModalOpen}
+        onClose={() => setIsDeleteCustomerTypeModalOpen(false)}
         title="Confirmar eliminación"
         size="sm"
       >
@@ -1529,14 +1098,14 @@ function Customers() {
               ¿Estás seguro de que deseas eliminar el tipo de cliente <strong>{currentCustomerType.name}</strong>?
             </p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Esta acción no se puede deshacer y no será posible si hay clientes usando este tipo.
+              Esta acción no se puede deshacer y no es posible si hay clientes asignados a este tipo.
             </p>
             
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
                 className="btn btn-outline"
-                onClick={() => setIsDeleteTypeModalOpen(false)}
+                onClick={() => setIsDeleteCustomerTypeModalOpen(false)}
               >
                 Cancelar
               </button>
