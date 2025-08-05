@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { LayoutGrid, Package, Users, ShoppingCart, DollarSign, PieChart, Settings, Menu, X, AlertCircle, ShoppingBag, UserCheck, ChevronLeft, ChevronRight, Palette } from 'lucide-react';
+import { LayoutGrid, Package, Users, ShoppingCart, DollarSign, PieChart, Settings, Menu, X, AlertCircle, ShoppingBag, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import Footer from './Footer';
-import ThemeSelector from './ThemeSelector';
 
 function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const { isRegisterOpen, getLowStockProducts, companyInfo } = useAppContext();
   const { logo, colorScheme, isDark } = useTheme();
   const location = useLocation();
