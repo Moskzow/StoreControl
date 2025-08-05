@@ -206,7 +206,7 @@ function Products() {
         <div>
           <h1 Productos="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Productos</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Gestiona el inventario de productos con precios diferenciados por tipo de cliente
+            Administra el inventario de productos con precios diferenciados por tipo de cliente
           </p>
         </div>
         
