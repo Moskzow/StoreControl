@@ -175,7 +175,7 @@ function Purchases() {
       {/* Header and actions */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Compras</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gestión de Compras</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Gestiona las compras a proveedores
           </p>
