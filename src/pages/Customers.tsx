@@ -827,7 +827,7 @@ function Customers() {
                   Tipos de Cliente Configurados
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Gestiona los diferentes tipos de cliente y sus márgenes de beneficio
+                  Aministra tipos de clientes y márgenes de beneficio
                 </p>
               </div>
             </div>
