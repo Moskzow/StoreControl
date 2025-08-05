@@ -6,6 +6,7 @@ import { exportAsJSON, exportAsXML, downloadFile } from '../utils/dataExport';
 import { importFromJSON, importFromXML } from '../utils/dataImport';
 import { CompanyInfo } from '../types';
 import Modal from '../components/ui/Modal';
+import ThemeSelector from '../components/ThemeSelector';
 
 type ExportFormat = 'json' | 'xml';
 
@@ -30,6 +31,7 @@ function Settings() {
   const [importError, setImportError] = useState('');
   const [selectedExportFormat, setSelectedExportFormat] = useState<ExportFormat>('json');
   const [currentCompanyInfo, setCurrentCompanyInfo] = useState<CompanyInfo>(companyInfo);
+  const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
