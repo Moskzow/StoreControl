@@ -8,7 +8,7 @@ import ThemeSelector from './ThemeSelector';
 
 function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { isRegisterOpen, getLowStockProducts, companyInfo } = useAppContext();
@@ -251,10 +251,82 @@ function Layout() {
                             <div className="font-medium">{item.label}</div>
                             <div className="text-xs text-gray-300 mt-1">{item.description}</div>
                             {item.to === '/productos' && hasLowStockAlert && (
-                              <span className="ml-2 bg-error-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                              <div className="flex items-center mt-2 pt-2 border-t border-gray-700">
+                                <AlertCircle className="h-3 w-3 text-error-400 mr-1" />
+                                <span className="text-xs text-error-400">
+                                  {lowStockProducts.length} productos con stock bajo
+                                </span>
+                              </div>
+                            )}
+                            {item.to === '/ventas' && !isRegisterOpen && (
+                              <div className="flex items-center mt-2 pt-2 border-t border-gray-700">
+                                <AlertCircle className="h-3 w-3 text-warning-400 mr-1" />
+                                <span className="text-xs text-warning-400">
+                                  Caja cerrada
+                                </span>
+                              </div>
+                            )}
+                            <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                          </div>
+                        )}
+                        
+                        {/* Notification badge for collapsed state */}
+                        {isSidebarCollapsed && (
+                          <>
+                            {item.to === '/productos' && hasLowStockAlert && (
+                              <span className="absolute -top-1 -right-1 bg-error-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
                                 {lowStockProducts.length}
                               </span>
                             )}
+                            {item.to === '/ventas' && !isRegisterOpen && (
+                              <span className="absolute -top-1 -right-1 bg-warning-500 text-white text-xs rounded-full w-2 h-2"></span>
+                            )}
+                          </>
+                        )}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Supply Chain Section */}
+              <div>
+                {!isSidebarCollapsed && (
+                  <div className="px-3 mb-3">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                      Cadena de Suministro
+                    </h3>
+                  </div>
+                )}
+                <ul className="space-y-1">
+                  {navItems.slice(4, 6).map((item) => (
+                    <li key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        className={({ isActive }) => 
+                          `flex items-center px-3 py-3 rounded-md transition-all duration-200 group relative ${
+                            isActive 
+                              ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' 
+                              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                          } ${item.disabled ? 'opacity-50 pointer-events-none' : ''}`
+                        }
+                        title={isSidebarCollapsed ? item.label : undefined}
+                      >
+                        <div className="flex-shrink-0">
+                          {item.icon}
+                        </div>
+                        
+                        <span className={`ml-3 transition-all duration-300 ${
+                          isSidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
+                        }`}>
+                          {item.label}
+                        </span>
+                        
+                        {/* Tooltip for collapsed state */}
+                        {isSidebarCollapsed && (
+                          <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 min-w-max">
+                            <div className="font-medium">{item.label}</div>
+                            <div className="text-xs text-gray-300 mt-1">{item.description}</div>
                             <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
                           </div>
                         )}
@@ -360,9 +432,9 @@ function Layout() {
             </div>
           </nav>
           
-          <div className={`p-4 border-t border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+          <div className={`border-t border-gray-200 dark:border-gray-700 transition-all duration-300 ${
             isSidebarCollapsed ? 'px-2' : 'px-4'
-          }`}>
+          } py-4`}>
             <div className={`text-sm text-gray-500 dark:text-gray-400 ${
               isSidebarCollapsed ? 'text-center' : ''
             }`}>
@@ -370,7 +442,9 @@ function Layout() {
                 <div className={`flex items-center text-success-600 dark:text-success-400 ${
                   isSidebarCollapsed ? 'justify-center' : ''
                 }`}>
-                  <span className="w-2 h-2 rounded-full bg-success-500 mr-2"></span>
+                  <span className={`w-2 h-2 rounded-full bg-success-500 transition-all duration-300 ${
+                    isSidebarCollapsed ? 'mr-0' : 'mr-2'
+                  }`}></span>
                   <span className={`transition-all duration-300 ${
                     isSidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
                   }`}>
@@ -381,7 +455,9 @@ function Layout() {
                 <div className={`flex items-center text-error-600 dark:text-error-400 ${
                   isSidebarCollapsed ? 'justify-center' : ''
                 }`}>
-                  <span className="w-2 h-2 rounded-full bg-error-500 mr-2"></span>
+                  <span className={`w-2 h-2 rounded-full bg-error-500 transition-all duration-300 ${
+                    isSidebarCollapsed ? 'mr-0' : 'mr-2'
+                  }`}></span>
                   <span className={`transition-all duration-300 ${
                     isSidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
                   }`}>
