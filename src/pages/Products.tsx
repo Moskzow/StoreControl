@@ -111,9 +111,9 @@ function Products() {
       category: '',
       lowStockThreshold: undefined, // Individual threshold (optional)
       profitMargins: {
-        habitual: 0.25,   // 25% default margin for habitual customers
-        vip: 0.20,        // 20% default margin for VIP customers
-        premium: 0.30,    // 30% default margin for premium customers
+        habitual: 0.30,   // 30% default margin for habitual customers
+        vip: 0.25,        // 25% default margin for VIP customers
+        premium: 0.20,    // 20% default margin for premium customers
         wholesale: 0.15   // 15% default margin for wholesale customers
       },
       createdAt: new Date().toISOString(),
