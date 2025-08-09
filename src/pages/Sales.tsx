@@ -201,7 +201,7 @@ function Sales() {
             
             {/* Customer dropdown */}
             {showCustomerDropdown && filteredCustomers.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-800 dark:border-gray-600">
+              <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg dark:bg-gray-800 dark:border-gray-600">
                 {filteredCustomers.map((customer) => (
                   <button
                     key={customer.id}
