@@ -102,9 +102,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Customer types with new default values
   const [customerTypes, setCustomerTypes] = useState<CustomerType[]>(() => 
     loadData('customerTypes', [
-      { id: '1', name: 'Habitual', profitMargin: 0.25 },
-      { id: '2', name: 'VIP', profitMargin: 0.20 },
-      { id: '3', name: 'Premium', profitMargin: 0.30 },
+      { id: '1', name: 'Habitual', profitMargin: 0.30 },
+      { id: '2', name: 'VIP', profitMargin: 0.25 },
+      { id: '3', name: 'Premium', profitMargin: 0.20 },
       { id: '4', name: 'Mayorista', profitMargin: 0.15 }
     ])
   );
