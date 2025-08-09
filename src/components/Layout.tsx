@@ -288,54 +288,7 @@ function Layout() {
                   ))}
                 </ul>
               </div>
-
-              {/* Supply Chain Section */}
-              <div>
-                {!isSidebarCollapsed && (
-                  <div className="px-3 mb-3">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">
-                      Cadena de Suministro
-                    </h3>
-                  </div>
-                )}
-                <ul className="space-y-1">
-                  {navItems.slice(4, 6).map((item) => (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        className={({ isActive }) => 
-                          `flex items-center px-3 py-3 rounded-md transition-all duration-200 group relative ${
-                            isActive 
-                              ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300' 
-                              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                          } ${item.disabled ? 'opacity-50 pointer-events-none' : ''}`
-                        }
-                        title={isSidebarCollapsed ? item.label : undefined}
-                      >
-                        <div className="flex-shrink-0">
-                          {item.icon}
-                        </div>
-                        
-                        <span className={`ml-3 transition-all duration-300 ${
-                          isSidebarCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-                        }`}>
-                          {item.label}
-                        </span>
-                        
-                        {/* Tooltip for collapsed state */}
-                        {isSidebarCollapsed && (
-                          <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 min-w-max">
-                            <div className="font-medium">{item.label}</div>
-                            <div className="text-xs text-gray-300 mt-1">{item.description}</div>
-                            <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
-                          </div>
-                        )}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
+            
               {/* Supply Chain Section */}
               <div>
                 {!isSidebarCollapsed && (
