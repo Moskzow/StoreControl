@@ -1065,7 +1065,7 @@ function Reports() {
                 <tbody>
                   {Object.entries(salesReport.salesByCustomerType).map(([typeId, amount]) => {
                     const customerType = ['1', '2', '3'].includes(typeId) 
-                      ? ['Normal', 'Mayorista', 'Premium'][parseInt(typeId) - 1] 
+                      ? ['Normal', 'Mayorista', 'Premium', 'VIP'][parseInt(typeId) - 1] 
                       : 'Desconocido';
                     
                     const percentage = salesReport.totalSales > 0 
