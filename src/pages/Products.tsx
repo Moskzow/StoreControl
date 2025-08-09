@@ -128,9 +128,9 @@ function Products() {
     const updatedProduct = {
       ...product,
       profitMargins: {
-        habitual: product.profitMargins?.habitual || 0.25,
-        vip: product.profitMargins?.vip || 0.20,
-        premium: product.profitMargins?.premium || 0.30,
+        habitual: product.profitMargins?.habitual || 0.30,
+        vip: product.profitMargins?.vip || 0.25,
+        premium: product.profitMargins?.premium || 0.20,
         wholesale: product.profitMargins?.wholesale || 0.15
       }
     };
